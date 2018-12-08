@@ -1,0 +1,5 @@
+{
+    "port": "COM10",
+    "board": "arduino:avr:chiwawa",
+    "_comment": "This is not the correct board, Teensy is not supported, but this is close enough to get the library files into IntelliSense"
+}
