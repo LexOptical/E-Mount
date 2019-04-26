@@ -3,8 +3,7 @@
 #include "DebugTools.h"
 #include "Message.h"
 
-const int PIN_LENS_CS_BODY = LISTEN_ONLY ? 6 : 2;
-const int PIN_LENS_CS_BODY_IN = LISTEN_ONLY ? 2 : 6;
+const int PIN_LENS_CS_BODY = 2;
 const int PIN_BODY_CS_LENS = 3;
 const int PIN_BODY_VD_LENS = 4;
 
@@ -52,12 +51,14 @@ void setup() {
 
     pinMode(PIN_BODY_VD_LENS, INPUT);
 
-    pinMode(PIN_LENS_CS_BODY, OUTPUT);
-    digitalWrite(PIN_LENS_CS_BODY, LOW);
-
-    pinMode(PIN_LENS_CS_BODY_IN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(PIN_LENS_CS_BODY_IN), lenCsChange, CHANGE);
-
+    if(LISTEN_ONLY) {
+        pinMode(PIN_LENS_CS_BODY, INPUT);
+        attachInterrupt(digitalPinToInterrupt(PIN_LENS_CS_BODY), lenCsChange, CHANGE);
+	} else {
+	    pinMode(PIN_LENS_CS_BODY, OUTPUT);
+        digitalWrite(PIN_LENS_CS_BODY, LOW);
+	}
+		
     pinMode(PIN_BODY_CS_LENS, INPUT);
     attachInterrupt(digitalPinToInterrupt(PIN_BODY_CS_LENS), bodyCsChange, CHANGE);
 
@@ -81,7 +82,7 @@ void bodyVdChange() {
 }
 
 void lenCsChange() {
-    printLenCS(digitalRead(PIN_LENS_CS_BODY_IN));
+    printLenCS(digitalRead(PIN_LENS_CS_BODY));
 }
 
 void printLenCS(bool val) {
