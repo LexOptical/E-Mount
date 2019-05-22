@@ -1,6 +1,13 @@
 #ifndef Constants_h
 #define Constants_h
 
+
+const String LENS_TO_BODY = "Lens->Body ";
+const String BODY_TO_LENS = "Body->Lens ";
+const String INIT_COMPLETE_MSG = "Init Complete";
+
+const int INIT_COMPLETE = 2;
+
 const int INVALID_POSITION = -999;
 const int INPUT_BUFFER_SIZE = 256;
 const int lensToBody = 1;

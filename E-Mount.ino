@@ -2,12 +2,13 @@
 #include "Constants.h"
 #include "DebugTools.h"
 #include "Message.h"
+#include "Message05.h"
 
 const int PIN_LENS_CS_BODY = 2;
 const int PIN_BODY_CS_LENS = 3;
 const int PIN_BODY_VD_LENS = 4;
 
-Message *message05 = new Message(MESSAGE_CLASS_NORMAL, 0, 0x05, norm05, sizeof(norm05));
+Message05 *message05 = new Message05(MESSAGE_CLASS_NORMAL, 0, 0x05, norm05, sizeof(norm05));
 Message *message06 = new Message(MESSAGE_CLASS_NORMAL, 0, 0x06, norm06, sizeof(norm06));
 
 int bodyToLensBufferPosition = INVALID_POSITION;
@@ -18,7 +19,7 @@ byte lensToBodyBuffer[INPUT_BUFFER_SIZE] = {0};
 
 byte message03target01 = 15, message03target02 = 15;  // AF positions
 
-byte inited = LISTEN_ONLY ? 6 : 0;
+byte inited = LISTEN_ONLY ? INIT_COMPLETE : 0;
 int unusedClockWindows = 0;
 
 void startMessage() {
@@ -28,7 +29,7 @@ void startMessage() {
     }
     digitalWrite(PIN_LENS_CS_BODY, HIGH);
     printLenCS(true);
-    delayMicroseconds(40);  //maybe 80
+    delayMicroseconds(40);  
 }
 
 void finishMessage() {
@@ -54,10 +55,10 @@ void setup() {
     if(LISTEN_ONLY) {
         pinMode(PIN_LENS_CS_BODY, INPUT);
         attachInterrupt(digitalPinToInterrupt(PIN_LENS_CS_BODY), lenCsChange, CHANGE);
-	} else {
-	    pinMode(PIN_LENS_CS_BODY, OUTPUT);
+  	} else {
+  	    pinMode(PIN_LENS_CS_BODY, OUTPUT);
         digitalWrite(PIN_LENS_CS_BODY, LOW);
-	}
+  	}
 		
     pinMode(PIN_BODY_CS_LENS, INPUT);
     attachInterrupt(digitalPinToInterrupt(PIN_BODY_CS_LENS), bodyCsChange, CHANGE);
@@ -86,7 +87,7 @@ void lenCsChange() {
 }
 
 void printLenCS(bool val) {
-    if (inited < 2 || DEBUG_TIMING) {
+    if (inited < INIT_COMPLETE || DEBUG_TIMING) {
         Serial.print(val ? "[L:" : "[l:");
         Serial.print(micros());
         Serial.println("]");
@@ -94,20 +95,21 @@ void printLenCS(bool val) {
 }
 
 void bodyCsChange() {
-    if (inited < 2 || DEBUG_TIMING) {
+    if (inited < INIT_COMPLETE || DEBUG_TIMING) {
         Serial.print(digitalRead(PIN_BODY_CS_LENS) ? "[B:" : "[b:");
         Serial.print(micros());
         Serial.println("]");
     }
     if (inited == 0) {
-        delayMicroseconds(990);
+        delayMicroseconds(990); // MAGIC NUMBER ONE, To the best of our knowledge these delays indicate we are a 750kbaud lens.
         digitalWrite(PIN_LENS_CS_BODY, HIGH);
         printLenCS(true);
         inited++;
     } else if (inited == 1) {
-        delayMicroseconds(305);
+        delayMicroseconds(305); // MAGIC NUMBER TWO
         digitalWrite(PIN_LENS_CS_BODY, LOW);
         printLenCS(false);
+        Serial.println(INIT_COMPLETE_MSG);
         inited++;
     }
 }
@@ -133,19 +135,14 @@ void processMessage(Message *input) {
 
     switch (input->messageType) {
         case 0x03:
-            if (input->bodyLength > 22) {
-                message05->body[77] = input->body[21];
-                message05->body[78] = input->body[22];
-            }
+            message05->updateBasedOn03(input);
             break;
         case 0x04:
             // Send both 0x05 and 0x06 back
             startMessage();
             message05->sequenceNumber = input->sequenceNumber + 1;
-            aperture += 1;
-            aperture %= 0xFF;
-            message05->body[30] = aperture & 0xFF;  // 0xAB;  // change aperture
-            message05->body[31] = aperture >> 8;
+            // Simulate a changing aperture
+            message05->setAperture(message05->aperture + 1);
             message05->prepForSending();
 
             writeSerial1Debuggable(message05->outputBuffer, message05->wireLength);
@@ -161,10 +158,9 @@ void processMessage(Message *input) {
             finishMessage();
             break;
 
-            //INIT MESSAGES
+        //INIT MESSAGES
         case 0x01:
             startMessage();
-            //delayMicroseconds(520); //not needed
             writeSerial1Debuggable(init01, sizeof(init01));
             finishMessage();
             break;
@@ -233,9 +229,9 @@ void processByte(int read, byte *buffer, int &position, int direction) {
             delete message;
 
             if (direction == lensToBody) {
-                Serial.print("Lens->Body ");
+                Serial.print(LENS_TO_BODY);
             } else {
-                Serial.print("Body->Lens ");
+                Serial.print(BODY_TO_LENS);
             }
 
             //Serial.print(message->messageType, HEX);
@@ -243,8 +239,9 @@ void processByte(int read, byte *buffer, int &position, int direction) {
             Serial.print(' ');
             Serial.println(micros());
 
-            flushDebugOutputBuffer();
-
+            if(!LISTEN_ONLY){
+              flushDebugOutputBuffer();
+            }
             position = INVALID_POSITION;
         } else {
             //Error
