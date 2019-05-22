@@ -21,6 +21,7 @@ byte message03target01 = 15, message03target02 = 15;  // AF positions
 
 byte inited = LISTEN_ONLY ? INIT_COMPLETE : 0;
 int unusedClockWindows = 0;
+boolean highspeedMode = false;
 
 void startMessage() {
     //wait for body_cs to go LOW
@@ -72,12 +73,17 @@ void bodyVdChange() {
         Serial.print(digitalRead(PIN_BODY_VD_LENS) ? "C " : "c ");
         Serial.println(micros());
     }
-    if (!LISTEN_ONLY && inited != 0) {
+    if ( inited != 0) {
         unusedClockWindows++;
         if (unusedClockWindows > 100) {
-            Serial.print("RESETTING too many unusedClockWindows");
-            inited = 0;  // RESET we've got into a bad state
+            Serial.println(RESETTING);
             unusedClockWindows = 0;
+            lensToBodyBufferPosition = INVALID_POSITION;
+            bodyToLensBufferPosition = INVALID_POSITION;
+            setLowspeedMode();
+            if(!LISTEN_ONLY) {
+              inited = 0;  // RESET we've got into a bad state
+            }
         }
     }
 }
@@ -126,11 +132,33 @@ void loop() {
     }
 }
 
-int aperture = 0;
+
+void setLowspeedMode(){
+  if(highspeedMode == false) {
+    return;
+  }
+  Serial1.begin(750000, SERIAL_8N1);
+  Serial2.begin(750000, SERIAL_8N1);
+  highspeedMode = false;
+}
+
+void setHighspeedMode(){
+  if(highspeedMode) {
+    return;
+  }
+  Serial1.begin(1500000, SERIAL_8N1);
+  Serial2.begin(1500000, SERIAL_8N1);
+  highspeedMode = true;
+}
 
 void processMessage(Message *input) {
     if (LISTEN_ONLY) {
-        return;
+      unusedClockWindows = 0;
+      if(input->messageType == 0x0C ){
+        // We'll do this on the body message to the lens so we'll not see the reply from the lens
+        setHighspeedMode(); 
+      }
+      return;
     }
 
     switch (input->messageType) {
@@ -189,6 +217,10 @@ void processMessage(Message *input) {
             writeSerial1Debuggable(init0B, sizeof(init0B));
             finishMessage();
             break;
+        case 0x0C:
+            //todo reply with confirmation
+            //finish message
+            //setHighspeedMode();
         case 0x0D:
             startMessage();
             writeSerial1Debuggable(init0D, sizeof(init0D));
@@ -199,6 +231,7 @@ void processMessage(Message *input) {
             writeSerial1Debuggable(init10, sizeof(init10));
             finishMessage();
             break;
+        
     }
 }
 

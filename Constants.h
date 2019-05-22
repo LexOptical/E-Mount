@@ -5,6 +5,7 @@
 const String LENS_TO_BODY = "Lens->Body ";
 const String BODY_TO_LENS = "Body->Lens ";
 const String INIT_COMPLETE_MSG = "Init Complete";
+const String RESETTING = "RESETTING too many unusedClockWindows";
 
 const int INIT_COMPLETE = 2;
 
