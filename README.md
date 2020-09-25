@@ -21,4 +21,5 @@ You need to setup the [Teensyduino add-ons](https://www.pjrc.com/teensy/td_downl
 To interface with a camera you can construct a jig using a macro extension tube (use a 16mm one if possible as the wiring is difficult in a 10mm version). Meike brand is known to be workable. There is no logic level translation needed or external components
 
 ![Circuit Diagram](/circuitdiagram.png)
+
 Appologies for the quality of the above diagram (it's easier than modeling the whole Teensy in Eagle)
