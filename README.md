@@ -18,4 +18,7 @@ See [LexOptical/E-Mount-Traffic-Samples](https://github.com/LexOptical/E-Mount-T
 You need to setup the [Teensyduino add-ons](https://www.pjrc.com/teensy/td_download.html) for Arduino Studio. The project should then build in the Arduino Studio normally.
 
 ## Electrical interface
-To interface with a camera you can construct a jig using a macro extension tube (use a 16mm one if possible as the wiring is difficult in a 10mm version). Meike brand is known to be workable.
+To interface with a camera you can construct a jig using a macro extension tube (use a 16mm one if possible as the wiring is difficult in a 10mm version). Meike brand is known to be workable. There is no logic level translation needed or external components
+
+![Circuit Diagram](/circuitdiagram.png)
+Appologies for the quality of the above diagram (it's easier than modeling the whole Teensy in Eagle)
